@@ -1,0 +1,32 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-capable" content="yes"><title>קוד צבע לרכב</title>
+<style>
+body{font-family:system-ui,Arial;background:#f3f4f6;margin:0;display:grid;place-items:center;min-height:100vh}
+main{background:#fff;padding:28px;border-radius:16px;width:min(92vw,380px);box-shadow:0 4px 20px #0002;text-align:center}
+h1{font-size:20px;margin:0 0 18px}
+input{width:100%;box-sizing:border-box;font-size:26px;text-align:center;letter-spacing:3px;padding:12px;border:2px solid #ccc;border-radius:10px}
+button{margin-top:14px;width:100%;font-size:18px;padding:12px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer}
+button:disabled{opacity:.5}#out{margin-top:18px;text-align:right;line-height:1.7;font-size:15px}
+.code{font-size:32px;font-weight:700;text-align:center;background:#f7f0b0;border-radius:10px;padding:8px;margin:8px 0}
+</style></head><body><main>
+<h1>בירור קוד צבע לרכב</h1>
+<input id="p" inputmode="numeric" placeholder="מספר רישוי" autofocus>
+<button id="b">חפש</button><div id="out"></div></main>
+<script>
+const $=id=>document.getElementById(id);
+async function go(){
+  const plate=$('p').value.trim(); if(!plate)return;
+  $('b').disabled=true; $('out').textContent='מחפש... (עד חצי דקה)';
+  try{
+    const d=await (await fetch('/api/search?plate='+encodeURIComponent(plate))).json();
+    if(d.error){$('out').textContent=d.error;return}
+    const i=d.info; let h=`<b>${i.maker||'לא נמצא'} ${i.model||''}</b> ${i.year||''}<br>צבע: ${i.colorName||'-'}<br>שלדה: ${i.vin||'לא נמצאה'}`;
+    if(d.answer?.code) h+=`<div class="code">${d.answer.code}</div>מקור: ${d.answer.site}`;
+    else if(d.unsupported) h+='<br>אין אתר יצרן מוגדר ליצרן הזה.';
+    else h+=`<br>לא הצלחתי לקרוא קוד מ-${d.answer?.site}.`;
+    for(const [n,u] of Object.entries(d.links||{})) h+=`<br><a href="${u}" target="_blank">חפש ב-${n}</a>`;
+    $('out').innerHTML=h;
+  }catch(e){$('out').textContent='שגיאה: '+e.message}finally{$('b').disabled=false}
+}
+$('b').onclick=go; $('p').onkeydown=e=>e.key==='Enter'&&go();
+</script></body></html>
